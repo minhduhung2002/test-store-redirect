@@ -5,134 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Đang chuyển hướng...</title>
     <style>
-      * {
+      body {
         margin: 0;
         padding: 0;
-        box-sizing: border-box;
-      }
-
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-          Oxygen, Ubuntu, Cantarell, sans-serif;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-      }
-
-      .container {
-        text-align: center;
-        padding: 40px 20px;
-        max-width: 500px;
-      }
-
-      .logo {
-        width: 100px;
-        height: 100px;
-        margin: 0 auto 30px;
-        background: white;
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 48px;
-        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-      }
-
-      h1 {
-        font-size: 28px;
-        margin-bottom: 15px;
-        font-weight: 600;
-      }
-
-      p {
-        font-size: 16px;
-        opacity: 0.9;
-        margin-bottom: 30px;
-        line-height: 1.6;
-      }
-
-      .spinner {
-        width: 50px;
-        height: 50px;
-        margin: 0 auto 30px;
-        border: 4px solid rgba(255, 255, 255, 0.3);
-        border-top: 4px solid white;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-      }
-
-      @keyframes spin {
-        0% {
-          transform: rotate(0deg);
-        }
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      .buttons {
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-        margin-top: 30px;
-      }
-
-      .btn {
-        display: inline-block;
-        padding: 15px 30px;
-        background: white;
-        color: #667eea;
-        text-decoration: none;
-        border-radius: 10px;
-        font-weight: 600;
-        transition: transform 0.2s, box-shadow 0.2s;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-      }
-
-      .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
-      }
-
-      .btn-secondary {
-        background: rgba(255, 255, 255, 0.2);
-        color: white;
-        backdrop-filter: blur(10px);
-      }
-
-      @media (max-width: 480px) {
-        h1 {
-          font-size: 24px;
-        }
-        p {
-          font-size: 14px;
-        }
+        background: #ffffff;
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <div class="logo">📱</div>
-      <h1>Đang mở ứng dụng...</h1>
-      <div class="spinner"></div>
-      <p id="status">Vui lòng đợi trong giây lát</p>
-
-      <div class="buttons" id="fallback-buttons" style="display: none">
-        <a href="#" id="store-link" class="btn">Tải ứng dụng</a>
-        <a href="#" id="web-link" class="btn btn-secondary"
-          >Tiếp tục trên Web</a
-        >
-      </div>
-    </div>
-
     <script>
       const CONFIG = {
         // Android
         androidPackage: "com.anonymaus.dev",
-        androidScheme: "anonymaus://", // Deep link scheme
+        androidScheme: "anonymaus://",
         playStoreUrl:
           "https://play.google.com/store/apps/details?id=com.anonymaus.dev",
 
@@ -143,8 +28,8 @@
         // Web fallback
         webUrl: "https://yourdomain.com",
 
-        // Tăng delay để đủ thời gian app mở
-        redirectDelay: 2500,
+        // Delay ngắn để phát hiện app có mở không
+        redirectDelay: 500,
       };
 
       // Get path from URL (for deep linking)
@@ -162,162 +47,101 @@
         let appUrl, storeUrl;
 
         if (isAndroid) {
-          // Android: Sử dụng deep link scheme
-          // Xử lý path an toàn - loại bỏ "/" đầu nếu có
           const cleanPath = path.startsWith("/") ? path.substring(1) : path;
           appUrl = CONFIG.androidScheme + cleanPath;
           storeUrl = CONFIG.playStoreUrl;
-
-          console.log("Android detected");
-          console.log("Trying app URL:", appUrl);
         } else if (isIOS) {
-          // iOS: Sử dụng custom scheme (hoặc universal link nếu đã config)
           const cleanPath = path.startsWith("/") ? path.substring(1) : path;
           appUrl = CONFIG.iosScheme + cleanPath;
           storeUrl = CONFIG.appStoreUrl;
-
-          console.log("iOS detected");
-          console.log("Trying app URL:", appUrl);
         } else {
           // Desktop - redirect to web
-          console.log("Desktop detected - redirecting to web");
-          document.getElementById("status").textContent =
-            "Đang chuyển đến trang web...";
-          setTimeout(() => {
-            window.location.href = CONFIG.webUrl + path;
-          }, 1000);
+          window.location.href = CONFIG.webUrl + path;
           return;
         }
 
         // Mobile: Try to open app
         let appOpened = false;
-        const startTime = Date.now();
 
-        // Detect if app opened (page became hidden)
+        // Detect if app opened
         const visibilityHandler = () => {
           if (document.hidden) {
             appOpened = true;
-            console.log("App opened successfully (visibility)");
           }
         };
 
-        // Detect if page lost focus (app opened)
         const blurHandler = () => {
           appOpened = true;
-          console.log("App opened successfully (blur)");
         };
 
         document.addEventListener("visibilitychange", visibilityHandler);
         window.addEventListener("blur", blurHandler);
 
-        // iOS vs Android có cách xử lý khác nhau
+        // Try to open app
         if (isIOS) {
-          // iOS: CHỈ dùng iframe để tránh Safari báo lỗi "Cannot Open Page"
+          // iOS: dùng iframe
           try {
             const iframe = document.createElement("iframe");
             iframe.style.display = "none";
-            iframe.style.width = "0";
-            iframe.style.height = "0";
             iframe.src = appUrl;
             document.body.appendChild(iframe);
 
-            // Cleanup iframe after delay
             setTimeout(() => {
               try {
                 document.body.removeChild(iframe);
-              } catch (e) {
-                // Ignore cleanup errors
-              }
-            }, 1000);
+              } catch (e) {}
+            }, 300);
           } catch (e) {
-            console.log("iOS iframe method failed:", e);
+            console.log("iOS iframe failed:", e);
           }
         } else if (isAndroid) {
-          // Android: Thử cả 2 methods
-          // Method 1: Iframe
+          // Android: thử iframe + direct navigation
           try {
             const iframe = document.createElement("iframe");
             iframe.style.display = "none";
-            iframe.style.width = "0";
-            iframe.style.height = "0";
             iframe.src = appUrl;
             document.body.appendChild(iframe);
 
             setTimeout(() => {
               try {
                 document.body.removeChild(iframe);
-              } catch (e) {
-                // Ignore
-              }
-            }, 500);
-          } catch (e) {
-            console.log("Android iframe failed:", e);
-          }
+              } catch (e) {}
+            }, 100);
+          } catch (e) {}
 
-          // Method 2: Direct navigation sau 100ms
           setTimeout(() => {
             if (!appOpened) {
               try {
                 window.location.href = appUrl;
-              } catch (e) {
-                console.error("Direct navigation failed:", e);
-              }
+              } catch (e) {}
             }
           }, 100);
         }
 
-        // Show fallback options after delay
+        // Redirect to store nếu app không mở được
         setTimeout(() => {
-          // Cleanup event listeners
           document.removeEventListener("visibilitychange", visibilityHandler);
           window.removeEventListener("blur", blurHandler);
 
           if (!document.hidden && !appOpened) {
-            // App didn't open - show store links
-            const spinner = document.querySelector(".spinner");
-            if (spinner) spinner.style.display = "none";
-
-            document.getElementById("status").textContent =
-              "Chưa cài đặt ứng dụng?";
-
-            const fallbackButtons = document.getElementById("fallback-buttons");
-            fallbackButtons.style.display = "flex";
-
-            const storeLink = document.getElementById("store-link");
-            storeLink.href = storeUrl;
-            storeLink.textContent = isAndroid
-              ? "Tải trên Google Play"
-              : "Tải trên App Store";
-
-            const webLink = document.getElementById("web-link");
-            webLink.href = CONFIG.webUrl + path;
-          } else if (appOpened) {
-            // App opened successfully - update UI
-            document.getElementById("status").textContent =
-              "Đã mở ứng dụng thành công!";
-            const spinner = document.querySelector(".spinner");
-            if (spinner) spinner.style.display = "none";
+            // Redirect to store ngay lập tức
+            window.location.href = storeUrl;
           }
         }, CONFIG.redirectDelay);
       }
 
-      // Start redirect after page load
+      // Start ngay lập tức
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", redirectToApp);
       } else {
         redirectToApp();
       }
 
-      // Handle back button (user returned without opening app)
+      // Handle back button
       window.addEventListener("pageshow", (event) => {
         if (event.persisted) {
-          // User came back - show fallback immediately
-          const spinner = document.querySelector(".spinner");
-          if (spinner) spinner.style.display = "none";
-
-          document.getElementById("status").textContent =
-            "Chưa cài đặt ứng dụng?";
-          document.getElementById("fallback-buttons").style.display = "flex";
+          const storeUrl = isAndroid ? CONFIG.playStoreUrl : CONFIG.appStoreUrl;
+          window.location.href = storeUrl;
         }
       });
     </script>
