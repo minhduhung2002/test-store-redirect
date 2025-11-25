@@ -1,0 +1,14 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.anonymaus.dev",
+      "sha256_cert_fingerprints": [
+        "41:51:6F:DA:E0:65:C6:C8:22:99:EB:CA:C7:93:C5:09:CA:65:BB:1E:FD:6E:38:62:B4:54:71:93:15:7B:07:65",
+        "27:CA:4F:58:97:37:DE:91:D3:41:E1:A3:55:E1:58:F6:B0:18:C1:0D:AA:4C:D2:C2:F7:94:45:1B:7C:0A:CC:B8",
+        "FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C"
+      ]
+    }
+  }
+]
