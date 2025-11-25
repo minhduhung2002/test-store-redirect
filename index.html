@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Đang chuyển hướng...</title>
+    <title>Redirecting...</title>
     <style>
       body {
         margin: 0;
@@ -28,7 +28,7 @@
         // Web fallback
         webUrl: "https://yourdomain.com",
 
-        // Delay ngắn để phát hiện app có mở không
+        // Short delay to detect if app opened
         redirectDelay: 500,
       };
 
@@ -79,7 +79,7 @@
 
         // Try to open app
         if (isIOS) {
-          // iOS: dùng iframe
+          // iOS: use iframe method
           try {
             const iframe = document.createElement("iframe");
             iframe.style.display = "none";
@@ -95,7 +95,7 @@
             console.log("iOS iframe failed:", e);
           }
         } else if (isAndroid) {
-          // Android: thử iframe + direct navigation
+          // Android: try iframe + direct navigation
           try {
             const iframe = document.createElement("iframe");
             iframe.style.display = "none";
@@ -118,19 +118,19 @@
           }, 100);
         }
 
-        // Redirect to store nếu app không mở được
+        // Redirect to store if app didn't open
         setTimeout(() => {
           document.removeEventListener("visibilitychange", visibilityHandler);
           window.removeEventListener("blur", blurHandler);
 
           if (!document.hidden && !appOpened) {
-            // Redirect to store ngay lập tức
+            // Redirect to store immediately
             window.location.href = storeUrl;
           }
         }, CONFIG.redirectDelay);
       }
 
-      // Start ngay lập tức
+      // Start immediately
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", redirectToApp);
       } else {
