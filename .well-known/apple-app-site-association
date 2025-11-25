@@ -1,0 +1,14 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "29JG3KM27R.com.overherd.dev.xyz",
+        "paths": [
+          "/post-detail/*",
+          "/home"
+        ]
+      }
+    ]
+  }
+}
