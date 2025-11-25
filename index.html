@@ -131,24 +131,25 @@
     <script>
       const CONFIG = {
         // Android
-        androidPackage: "com.anonymaus.dev", // ← Package name của bạn
-        androidScheme: "anonymaus://", // ← Deep link scheme
+        androidPackage: "com.anonymaus.dev",
+        androidScheme: "anonymaus://", // Deep link scheme
         playStoreUrl:
           "https://play.google.com/store/apps/details?id=com.anonymaus.dev",
 
         // iOS
-        iosScheme: "yourapp://",
-        appStoreUrl: "https://apps.apple.com/app/idXXXXXXXXX", // ← App Store ID
+        iosScheme: "anonymaus://",
+        appStoreUrl: "https://apps.apple.com/app/overherd/id6744361203",
 
         // Web fallback
-        webUrl: "https://yourdomain.com", // ← Website của bạn
+        webUrl: "https://yourdomain.com",
 
+        // Tăng delay để đủ thời gian app mở
         redirectDelay: 2500,
       };
 
       // Get path from URL (for deep linking)
       const urlParams = new URLSearchParams(window.location.search);
-      const path = urlParams.get("path") || ""; // e.g., ?path=/content/123
+      const path = urlParams.get("path") || "";
 
       // ===== DETECTION =====
       const userAgent = navigator.userAgent || navigator.vendor || window.opera;
@@ -161,23 +162,24 @@
         let appUrl, storeUrl;
 
         if (isAndroid) {
-          // Android App Link (preferred) or Deep Link
-          appUrl =
-            window.location.origin + path ||
-            CONFIG.androidScheme + path.substring(1);
+          // Android: Sử dụng deep link scheme
+          // Xử lý path an toàn - loại bỏ "/" đầu nếu có
+          const cleanPath = path.startsWith("/") ? path.substring(1) : path;
+          appUrl = CONFIG.androidScheme + cleanPath;
           storeUrl = CONFIG.playStoreUrl;
 
           console.log("Android detected");
           console.log("Trying app URL:", appUrl);
         } else if (isIOS) {
-          // iOS Universal Link or Custom Scheme
-          appUrl = CONFIG.iosScheme + path.substring(1);
+          // iOS: Sử dụng custom scheme (hoặc universal link nếu đã config)
+          const cleanPath = path.startsWith("/") ? path.substring(1) : path;
+          appUrl = CONFIG.iosScheme + cleanPath;
           storeUrl = CONFIG.appStoreUrl;
 
           console.log("iOS detected");
           console.log("Trying app URL:", appUrl);
         } else {
-          // Desktop - go to web
+          // Desktop - redirect to web
           console.log("Desktop detected - redirecting to web");
           document.getElementById("status").textContent =
             "Đang chuyển đến trang web...";
@@ -189,21 +191,92 @@
 
         // Mobile: Try to open app
         let appOpened = false;
+        const startTime = Date.now();
 
-        // Method 1: Direct navigation
-        window.location.href = appUrl;
+        // Detect if app opened (page became hidden)
+        const visibilityHandler = () => {
+          if (document.hidden) {
+            appOpened = true;
+            console.log("App opened successfully (visibility)");
+          }
+        };
 
-        // Method 2: Iframe fallback (for some Android devices)
-        const iframe = document.createElement("iframe");
-        iframe.style.display = "none";
-        iframe.src = appUrl;
-        document.body.appendChild(iframe);
+        // Detect if page lost focus (app opened)
+        const blurHandler = () => {
+          appOpened = true;
+          console.log("App opened successfully (blur)");
+        };
+
+        document.addEventListener("visibilitychange", visibilityHandler);
+        window.addEventListener("blur", blurHandler);
+
+        // iOS vs Android có cách xử lý khác nhau
+        if (isIOS) {
+          // iOS: CHỈ dùng iframe để tránh Safari báo lỗi "Cannot Open Page"
+          try {
+            const iframe = document.createElement("iframe");
+            iframe.style.display = "none";
+            iframe.style.width = "0";
+            iframe.style.height = "0";
+            iframe.src = appUrl;
+            document.body.appendChild(iframe);
+
+            // Cleanup iframe after delay
+            setTimeout(() => {
+              try {
+                document.body.removeChild(iframe);
+              } catch (e) {
+                // Ignore cleanup errors
+              }
+            }, 1000);
+          } catch (e) {
+            console.log("iOS iframe method failed:", e);
+          }
+        } else if (isAndroid) {
+          // Android: Thử cả 2 methods
+          // Method 1: Iframe
+          try {
+            const iframe = document.createElement("iframe");
+            iframe.style.display = "none";
+            iframe.style.width = "0";
+            iframe.style.height = "0";
+            iframe.src = appUrl;
+            document.body.appendChild(iframe);
+
+            setTimeout(() => {
+              try {
+                document.body.removeChild(iframe);
+              } catch (e) {
+                // Ignore
+              }
+            }, 500);
+          } catch (e) {
+            console.log("Android iframe failed:", e);
+          }
+
+          // Method 2: Direct navigation sau 100ms
+          setTimeout(() => {
+            if (!appOpened) {
+              try {
+                window.location.href = appUrl;
+              } catch (e) {
+                console.error("Direct navigation failed:", e);
+              }
+            }
+          }, 100);
+        }
 
         // Show fallback options after delay
         setTimeout(() => {
+          // Cleanup event listeners
+          document.removeEventListener("visibilitychange", visibilityHandler);
+          window.removeEventListener("blur", blurHandler);
+
           if (!document.hidden && !appOpened) {
             // App didn't open - show store links
-            document.querySelector(".spinner").style.display = "none";
+            const spinner = document.querySelector(".spinner");
+            if (spinner) spinner.style.display = "none";
+
             document.getElementById("status").textContent =
               "Chưa cài đặt ứng dụng?";
 
@@ -218,22 +291,14 @@
 
             const webLink = document.getElementById("web-link");
             webLink.href = CONFIG.webUrl + path;
+          } else if (appOpened) {
+            // App opened successfully - update UI
+            document.getElementById("status").textContent =
+              "Đã mở ứng dụng thành công!";
+            const spinner = document.querySelector(".spinner");
+            if (spinner) spinner.style.display = "none";
           }
         }, CONFIG.redirectDelay);
-
-        // Detect if app opened (page became hidden)
-        document.addEventListener("visibilitychange", () => {
-          if (document.hidden) {
-            appOpened = true;
-            console.log("App opened successfully");
-          }
-        });
-
-        // Detect if page lost focus (app opened)
-        window.addEventListener("blur", () => {
-          appOpened = true;
-          console.log("Page lost focus - app likely opened");
-        });
       }
 
       // Start redirect after page load
@@ -243,11 +308,15 @@
         redirectToApp();
       }
 
-      // Handle back button
+      // Handle back button (user returned without opening app)
       window.addEventListener("pageshow", (event) => {
         if (event.persisted) {
           // User came back - show fallback immediately
-          document.querySelector(".spinner").style.display = "none";
+          const spinner = document.querySelector(".spinner");
+          if (spinner) spinner.style.display = "none";
+
+          document.getElementById("status").textContent =
+            "Chưa cài đặt ứng dụng?";
           document.getElementById("fallback-buttons").style.display = "flex";
         }
       });
